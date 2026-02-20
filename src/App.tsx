@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy } from 'react';
 import { 
-  Wifi, Car, Coffee, Clock, Sparkles, Shield, MapPin, Phone, 
+  Wifi, Car, Coffee, Clock, Sparkles, Shield, MapPin, Phone, Wind, Tv,
   Mail, Instagram, Facebook, Check, Star, 
   ArrowRight, Menu, X, Bed, Users, Navigation,
   Utensils, Dumbbell, Users2,
-  Image, Info
+  Image
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 
 import { 
   hotelInfo, rooms, restaurantMenu, reviews, nearbyPlaces,
-  galleryImages, restaurantHours, eventPackages
+  galleryImages, eventPackages
 } from './data/hotelData';
 
 import { 
@@ -26,6 +26,8 @@ import {
 import { SwipeGallery, savedItemsManager } from './components/SwipeGallery';
 import { SavedGallery } from './components/SavedGallery';
 import { BookingFlow } from './components/booking/BookingFlow';
+import RestaurantPage from './components/restaurant/RestaurantPage';
+const AboutPage = lazy(() => import('./components/AboutPage'));
 import type { SwipeCardData } from './components/SwipeCard';
 
 import type { Room } from './types';
@@ -82,7 +84,7 @@ function NavBar({ onBookClick, currentPage, onNavigate, savedCount }: { onBookCl
         <div className="w-full px-4 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
             <button onClick={() => onNavigate('home')} className="flex items-center gap-2">
-              <img src="/HotelLotus-transparent.svg" alt="Lotus Hotel" className="h-10 lg:h-12 w-auto object-contain" />
+              <img src="/HotelLotus_exact.svg" alt="Lotus Hotel" className="h-10 lg:h-12 w-auto object-contain" />
             </button>
             
             <div className="hidden lg:flex items-center gap-6">
@@ -134,7 +136,7 @@ function HeroSection({ onBookClick }: { onBookClick: () => void }) {
   return (
     <section className="relative w-full min-h-screen overflow-hidden">
       <div className="absolute inset-0">
-        <img src="/hero_jijiga_night.jpg" alt="Jijiga city at night" className="w-full h-full object-cover" />
+        <img src="/lotushotel-topview.jpg" alt="Lotus top view" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0B0F1A]/90 via-[#0B0F1A]/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F1A] via-transparent to-[#0B0F1A]/30" />
       </div>
@@ -497,7 +499,7 @@ function Footer({ onNavigate }: { onNavigate: (page: string) => void }) {
       <div className="w-full px-4 lg:px-8 py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
-            <img src="/HotelLotus-transparent.svg" alt="Lotus Hotel" className="h-14 w-auto object-contain mb-4" />
+            <img src="/HotelLotus_exact.svg" alt="Lotus Hotel" className="h-14 w-auto object-contain mb-4" />
             <p className="text-[#B8C0D0] text-sm mb-4">{hotelInfo.tagline}</p>
             <p className="text-[#B8C0D0] text-sm">{hotelInfo.description.slice(0, 100)}...</p>
           </div>
@@ -569,8 +571,11 @@ function App() {
 
   const navigateTo = (page: string) => {
     setCurrentPage(page);
+    setPageAnnouncement(`Navigated to ${page}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const [pageAnnouncement, setPageAnnouncement] = useState('');
 
   const openBooking = (room?: Room) => {
     if (room) setSelectedRoom(room);
@@ -627,30 +632,120 @@ function App() {
               <Badge className="bg-[#D4A14C]/20 text-[#D4A14C] border-[#D4A14C]/30 mb-4">Accommodations</Badge>
               <h1 className="text-4xl lg:text-5xl font-bold text-white mb-8">Rooms & Suites</h1>
               <div className="grid md:grid-cols-2 gap-6">
-                {rooms.map((room) => (
-                  <Card key={room.id} className="glass-card rounded-3xl overflow-hidden">
-                    <div className="relative h-64 overflow-hidden">
-                      <img src={room.images[0]} alt={room.name} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F1A] to-transparent" />
-                      <div className="absolute top-4 left-4">
-                        <Badge className="bg-[#D4A14C] text-[#0B0F1A]">ETB 2500/night</Badge>
+                {rooms.map((room) => {
+                  const priceMin = room.priceRangeETB?.min ?? room.fromPriceETB ?? room.pricePerNight;
+                  const priceMax = room.priceRangeETB?.max;
+                  const priceLabel = priceMax ? `ETB ${priceMin.toLocaleString()} – ${priceMax.toLocaleString()}` : `From ETB ${priceMin.toLocaleString()} / night`;
+                  const badgeLabel = room.category === 'deluxe' ? 'Most Popular' : room.category === 'standard' ? 'Best Value' : room.category === 'vip' ? 'Luxury Suite' : '';
+                  const whatsappNumber = '251976040457';
+                  const waMessage = encodeURIComponent(`Hello Lotus Hotel, I would like to get today’s best rate for:\nRoom: ${room.name}\nCheck-in: [Date]\nCheck-out: [Date]\nGuests: [Number]\n\nPlease confirm availability and final price. Thank you.`);
+                  const waLink = `https://wa.me/${whatsappNumber}?text=${waMessage}`;
+
+                  return (
+                    <Card key={room.id} tabIndex={0} role="group" aria-label={`View details for ${room.name}`} className="glass-card rounded-3xl overflow-hidden transform transition-transform hover:scale-[1.02] hover:shadow-2xl">
+                      <div className="relative aspect-[4/3] w-full overflow-hidden">
+                        <img src={room.images[0]} alt={room.name} loading="lazy" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F1A] to-transparent" />
+                        <div className="absolute top-4 left-4">
+                          <Badge className="bg-[#D4A14C] text-[#0B0F1A]">{priceLabel}</Badge>
+                        </div>
+                        {badgeLabel && (
+                          <div className="absolute top-4 right-4">
+                            <Badge className="bg-white/5 text-[#B8C0D0] border-white/10">{badgeLabel}</Badge>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <CardContent className="p-6">
-                      <h3 className="text-2xl font-semibold text-white mb-2">{room.name}</h3>
-                      <p className="text-[#B8C0D0] mb-4">{room.description}</p>
-                      <div className="flex items-center gap-4 text-sm text-[#B8C0D0] mb-4">
-                        <span className="flex items-center gap-1"><Users className="w-4 h-4" />{room.maxGuests} Guests</span>
-                        <span className="flex items-center gap-1"><Bed className="w-4 h-4" />{room.bedType}</span>
-                        <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{room.size}</span>
+
+                      <CardContent className="p-6">
+                        <h3 className="text-2xl font-semibold text-white mb-2">{room.name}</h3>
+                        <p className="text-[#B8C0D0] mb-4">{room.shortDescription}</p>
+
+                        <div className="flex items-center gap-4 text-sm text-[#B8C0D0] mb-4">
+                          <span className="flex items-center gap-1"><Users className="w-4 h-4" />{room.maxGuests} Guests</span>
+                          <span className="flex items-center gap-1"><Bed className="w-4 h-4" />{room.bedType}</span>
+                          <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{room.size}</span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-[#B8C0D0] mb-4">
+                          {/* Amenity icons (wrap on small screens) */}
+                          {room.amenities.some(a => a.id === 'wifi') && <div className="flex items-center gap-1 px-2 py-1 rounded bg-white/2"><Wifi className="w-4 h-4" /><span className="text-xs">Wi‑Fi</span></div>}
+                          {room.amenities.some(a => a.id === 'ac') && <div className="flex items-center gap-1 px-2 py-1 rounded bg-white/2"><Wind className="w-4 h-4" /><span className="text-xs">AC</span></div>}
+                          {room.amenities.some(a => a.id === 'tv') && <div className="flex items-center gap-1 px-2 py-1 rounded bg-white/2"><Tv className="w-4 h-4" /><span className="text-xs">TV</span></div>}
+                          {room.amenities.some(a => a.id === 'minibar') && <div className="flex items-center gap-1 px-2 py-1 rounded bg-white/2"><Coffee className="w-4 h-4" /><span className="text-xs">Mini Bar</span></div>}
+                          {room.amenities.some(a => a.id === 'breakfast') && <div className="flex items-center gap-1 px-2 py-1 rounded bg-white/2"><Coffee className="w-4 h-4" /><span className="text-xs">Breakfast</span></div>}
+                        </div>
+
+                        <div className="mb-3 text-xs text-[#B8C0D0]">Rates may vary by season, occupancy, and availability.</div>
+
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <Button type="button" className="w-full sm:flex-1 bg-[#D4A14C] hover:bg-[#E8C87A] text-[#0B0F1A] font-semibold" onClick={() => handleBookRoom(room)}>
+                            Check Availability
+                          </Button>
+                          <a href={waLink} target="_blank" rel="noopener noreferrer" aria-label={`Get today's rate on WhatsApp for ${room.name}`} className="w-full sm:flex-1">
+                            <Button type="button" variant="outline" className="w-full border-white/20 text-white hover:bg-white/5">Get Today’s Rate on WhatsApp</Button>
+                          </a>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Comparison Table */}
+              <div className="mt-12">
+                <h2 className="text-2xl font-bold text-white mb-4">Compare Rooms</h2>
+                <div className="hidden md:block bg-white/5 rounded-2xl overflow-hidden">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="text-[#B8C0D0]">
+                        <th className="px-6 py-3">Room Type</th>
+                        <th className="px-6 py-3">Size</th>
+                        <th className="px-6 py-3">Bed Type</th>
+                        <th className="px-6 py-3">Max Guests</th>
+                        <th className="px-6 py-3">Key Perk</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rooms.map(r => (
+                        <tr key={r.id} className="border-t border-white/5">
+                          <td className="px-6 py-4 text-white">{r.name}</td>
+                          <td className="px-6 py-4 text-[#B8C0D0]">{r.size}</td>
+                          <td className="px-6 py-4 text-[#B8C0D0]">{r.bedType}</td>
+                          <td className="px-6 py-4 text-[#B8C0D0]">{r.maxGuests}</td>
+                          <td className="px-6 py-4 text-[#B8C0D0]">{r.category === 'standard' ? 'Best Value' : r.category === 'deluxe' ? 'Most Popular' : r.category === 'vip' ? 'Premium Living Area' : 'Comfort'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile stacked comparison */}
+                <div className="md:hidden grid gap-4 mt-4">
+                  {rooms.map(r => (
+                    <Card key={r.id} className="glass-card p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-semibold">{r.name}</div>
+                          <div className="text-[#B8C0D0] text-xs">{r.size} • {r.bedType}</div>
+                        </div>
+                        <div className="text-[#B8C0D0] text-sm">{r.maxGuests} Guests</div>
                       </div>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {room.amenities.slice(0, 4).map((amenity) => (
-                          <Badge key={amenity.id} variant="outline" className="border-white/20 text-[#B8C0D0]">{amenity.name}</Badge>
-                        ))}
-                      </div>
-                      <Button className="w-full bg-[#D4A14C] hover:bg-[#E8C87A] text-[#0B0F1A]" onClick={() => handleBookRoom(room)}>Book Now</Button>
-                    </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Trust Signals */}
+              <div className="mt-12 grid md:grid-cols-4 gap-4">
+                {[
+                  { icon: Wifi, title: 'Free Wi-Fi' },
+                  { icon: Clock, title: '24/7 Front Desk' },
+                  { icon: MapPin, title: 'Prime Jijiga Location' },
+                  { icon: Shield, title: 'Secure Parking' }
+                ].map((t, i) => (
+                  <Card key={i} className="glass-card rounded-xl p-4">
+                    <t.icon className="w-6 h-6 text-[#D4A14C] mb-2" />
+                    <div className="text-white font-medium">{t.title}</div>
                   </Card>
                 ))}
               </div>
@@ -658,65 +753,7 @@ function App() {
           </div>
         );
       case 'restaurant':
-        return (
-          <div className="pt-32 pb-20 px-4 lg:px-8 min-h-screen">
-            <div className="max-w-4xl mx-auto">
-              <Badge className="bg-[#D4A14C]/20 text-[#D4A14C] border-[#D4A14C]/30 mb-4"><Utensils className="w-3 h-3 mr-1" />Dining</Badge>
-              <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">Somali Restaurant</h1>
-              <p className="text-[#B8C0D0] mb-8">Experience authentic Somali cuisine in the heart of Jijiga</p>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-                <div className="glass-card rounded-xl p-4 text-center">
-                  <Clock className="w-6 h-6 text-[#D4A14C] mx-auto mb-2" />
-                  <p className="text-white font-medium text-sm">Breakfast</p>
-                  <p className="text-[#B8C0D0] text-xs">{restaurantHours.breakfast.open} - {restaurantHours.breakfast.close}</p>
-                </div>
-                <div className="glass-card rounded-xl p-4 text-center">
-                  <Sun className="w-6 h-6 text-[#D4A14C] mx-auto mb-2" />
-                  <p className="text-white font-medium text-sm">Lunch</p>
-                  <p className="text-[#B8C0D0] text-xs">{restaurantHours.lunch.open} - {restaurantHours.lunch.close}</p>
-                </div>
-                <div className="glass-card rounded-xl p-4 text-center">
-                  <Moon className="w-6 h-6 text-[#D4A14C] mx-auto mb-2" />
-                  <p className="text-white font-medium text-sm">Dinner</p>
-                  <p className="text-[#B8C0D0] text-xs">{restaurantHours.dinner.open} - {restaurantHours.dinner.close}</p>
-                </div>
-                <div className="glass-card rounded-xl p-4 text-center">
-                  <Phone className="w-6 h-6 text-[#D4A14C] mx-auto mb-2" />
-                  <p className="text-white font-medium text-sm">Reservations</p>
-                  <p className="text-[#B8C0D0] text-xs">{hotelInfo.phone}</p>
-                </div>
-              </div>
-
-              {restaurantMenu.map((category) => (
-                <div key={category.id} className="mb-12">
-                  <h2 className="text-2xl font-bold text-white mb-2">{category.name}</h2>
-                  {category.nameSomali && <p className="text-[#D4A14C] text-sm mb-4">{category.nameSomali}</p>}
-                  <p className="text-[#B8C0D0] mb-6">{category.description}</p>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {category.items.map((item) => (
-                      <Card key={item.id} className="glass-card rounded-xl p-4 flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-white font-medium">{item.name}</h4>
-                            {item.isPopular && <Badge className="bg-[#D4A14C] text-[#0B0F1A] text-xs">Popular</Badge>}
-                          </div>
-                          {item.nameSomali && <p className="text-[#D4A14C] text-xs">{item.nameSomali}</p>}
-                          <p className="text-[#B8C0D0] text-sm mt-1">{item.description}</p>
-                          <div className="flex gap-2 mt-2">
-                            {item.isVegetarian && <Badge variant="outline" className="border-green-500/30 text-green-400 text-xs">Vegetarian</Badge>}
-                            {item.isSpicy && <Badge variant="outline" className="border-red-500/30 text-red-400 text-xs">Spicy</Badge>}
-                          </div>
-                        </div>
-                        <p className="text-[#D4A14C] font-semibold">ETB {item.price}</p>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
+        return <RestaurantPage />;
       case 'facilities':
         return (
           <div className="pt-32 pb-20 px-4 lg:px-8 min-h-screen">
@@ -768,7 +805,7 @@ function App() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {galleryImages.map((image) => (
                     <div key={image.id} className="relative aspect-square rounded-xl overflow-hidden group cursor-pointer">
-                      <img src={image.src} alt={image.alt} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      <img src={image.src} alt={image.alt} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F1A]/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform">
                         <p className="text-white text-sm font-medium">{image.caption}</p>
@@ -813,49 +850,7 @@ function App() {
           </div>
         );
       case 'about':
-        return (
-          <div className="pt-32 pb-20 px-4 lg:px-8 min-h-screen">
-            <div className="max-w-4xl mx-auto">
-              <Badge className="bg-[#D4A14C]/20 text-[#D4A14C] border-[#D4A14C]/30 mb-4"><Info className="w-3 h-3 mr-1" />About</Badge>
-              <h1 className="text-4xl lg:text-5xl font-bold text-white mb-8">About Lotus Hotel</h1>
-              
-              <div className="grid md:grid-cols-2 gap-8 mb-12">
-                <div>
-                  <img src="/lotus_reception.jpg" alt="Lotus Hotel Reception" className="rounded-2xl w-full h-64 object-cover" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-white mb-4">Our Story</h2>
-                  <p className="text-[#B8C0D0] mb-4">{hotelInfo.description}</p>
-                  <p className="text-[#B8C0D0]">Located in the heart of Jijiga, we pride ourselves on delivering exceptional hospitality that blends modern comfort with the warm traditions of Ethiopian and Somali culture.</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-                <div className="glass-card rounded-xl p-6 text-center">
-                  <p className="text-3xl font-bold text-[#D4A14C]">10+</p>
-                  <p className="text-[#B8C0D0] text-sm">Years of Service</p>
-                </div>
-                <div className="glass-card rounded-xl p-6 text-center">
-                  <p className="text-3xl font-bold text-[#D4A14C]">50+</p>
-                  <p className="text-[#B8C0D0] text-sm">Premium Rooms</p>
-                </div>
-                <div className="glass-card rounded-xl p-6 text-center">
-                  <p className="text-3xl font-bold text-[#D4A14C]">10K+</p>
-                  <p className="text-[#B8C0D0] text-sm">Happy Guests</p>
-                </div>
-                <div className="glass-card rounded-xl p-6 text-center">
-                  <p className="text-3xl font-bold text-[#D4A14C]">4.8</p>
-                  <p className="text-[#B8C0D0] text-sm">Guest Rating</p>
-                </div>
-              </div>
-
-              <div className="glass-card rounded-2xl p-8">
-                <h2 className="text-2xl font-bold text-white mb-4">Our Mission</h2>
-                <p className="text-[#B8C0D0]">To provide every guest with an unforgettable experience that combines the comfort of modern amenities with the warmth of traditional Ethiopian hospitality. We strive to be the premier destination for travelers seeking quality accommodation in Jijiga.</p>
-              </div>
-            </div>
-          </div>
-        );
+        return <AboutPage onNavigate={navigateTo} />;
       case 'contact':
         return (
           <div className="pt-32 pb-20 px-4 lg:px-8 min-h-screen">
@@ -941,9 +936,11 @@ function App() {
 
   return (
     <div className="relative min-h-screen bg-[#0B0F1A]">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-20 focus:left-4 z-50 bg-[#D4A14C] text-[#0B0F1A] px-3 py-2 rounded">Skip to content</a>
+      <div aria-live="polite" className="sr-only">{pageAnnouncement}</div>
       <div className="grain-overlay" />
       <NavBar onBookClick={() => openBooking()} currentPage={currentPage} onNavigate={navigateTo} savedCount={savedCount} />
-      <main className="relative">{renderPage()}</main>
+      <main id="main-content" className="relative">{renderPage()}</main>
       <Footer onNavigate={navigateTo} />
 
       <BookingFlow 
@@ -963,10 +960,6 @@ const Sun = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const Moon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeWidth="2" strokeLinecap="round" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-  </svg>
-);
+// legacy icon: removed (unused)
 
 export default App;

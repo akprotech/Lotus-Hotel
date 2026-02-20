@@ -7,6 +7,9 @@ export interface Room {
   nameSomali?: string;
   description: string;
   shortDescription: string;
+  fromPriceETB?: number;
+  priceRangeETB?: { min: number; max: number };
+  pricingNote?: string;
   pricePerNight: number;
   priceUSD?: number;
   size: string;
@@ -137,7 +140,16 @@ export interface Experience {
   available: boolean;
 }
 
-export type PaymentMethod = 'telebirr' | 'ebirr' | 'cbe-birr' | 'amole' | 'ethswitch' | 'bank-transfer' | 'cash';
+export type PaymentMethod =
+  | 'cbe'
+  | 'ebirr'
+  | 'hellocash'
+  | 'telebirr'
+  | 'abyssinia-bank'
+  | 'amole'
+  | 'ethswitch'
+  | 'bank-transfer'
+  | 'cash';
 
 export interface PaymentConfig {
   method: PaymentMethod;

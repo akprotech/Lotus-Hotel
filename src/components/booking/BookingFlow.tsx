@@ -72,6 +72,21 @@ function uid(prefix = 'LTS') {
   return `${prefix}-${ts}-${rand}`;
 }
 
+// Sequential booking reference stored in localStorage to produce human-friendly refs
+const BOOKING_SEQ_KEY = 'lotus_booking_seq_v1';
+function getNextBookingReference(): string {
+  try {
+    const raw = localStorage.getItem(BOOKING_SEQ_KEY);
+    const cur = raw ? Number(raw) || 0 : 0;
+    const next = cur + 1;
+    localStorage.setItem(BOOKING_SEQ_KEY, String(next));
+    return `LOTUS-MLU${String(next).padStart(5, '20261-0')}`;
+  } catch (e) {
+    // fallback to uid if localStorage not available
+    return uid('LOTUS');
+  }
+}
+
 function nightsBetween(checkInISO: string, checkOutISO: string) {
   const a = new Date(checkInISO);
   const b = new Date(checkOutISO);
@@ -125,7 +140,17 @@ const bookingSchema = z.object({
   phone: z.string().min(6),
   specialRequests: z.string().optional(),
   paymentMethod: z
-    .enum(['telebirr', 'ebirr', 'cbe-birr', 'amole', 'ethswitch', 'bank-transfer', 'cash'])
+    .enum([
+      'cbe',
+      'ebirr',
+      'hellocash',
+      'telebirr',
+      'abyssinia-bank',
+      'amole',
+      'ethswitch',
+      'bank-transfer',
+      'cash',
+    ])
     .optional(),
 });
 
@@ -302,7 +327,7 @@ export function BookingFlow({
 
     const booking: Booking = {
       id: crypto?.randomUUID?.() ?? uid('BOOK'),
-      bookingReference: uid('LOTUS'),
+      bookingReference: getNextBookingReference(),
       roomId: selectedRoom.id,
       room: selectedRoom,
       guestInfo: guest,
@@ -450,11 +475,12 @@ export function BookingFlow({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
+          showCloseButton={false}
           className={cx(
-            'p-0 overflow-hidden text-white border-white/10',
-            'w-[96vw] sm:w-[92vw] max-w-5xl',
-            'max-h-[92vh] bg-[#0B0F1A]',
-          )}
+              'p-0 overflow-hidden text-white border-white/10',
+              'w-[95vw] sm:w-[92vw] max-w-5xl mx-auto',
+              'max-h-[92vh] bg-[#0B0F1A] z-[99999]'
+            )}
         >
           {/* subtle background polish */}
           <div className="pointer-events-none absolute inset-0">
@@ -525,7 +551,7 @@ export function BookingFlow({
           {/* Body */}
           <div className="relative">
             {/* ✅ IMPORTANT: allow dropdown portals to overlay (no clipping) */}
-            <div className="px-3 sm:px-6 py-4 sm:py-6 max-h-[60vh] overflow-y-auto overflow-x-visible">
+            <div className="px-3 sm:px-6 py-4 sm:py-6 max-h-[80vh] sm:max-h-[72vh] overflow-y-auto overflow-x-visible pb-28">
               <AnimatePresence mode="wait">
                 {/* ROOM */}
                 {step === 'room' && (
@@ -536,7 +562,7 @@ export function BookingFlow({
                     exit={{ opacity: 0, y: -10 }}
                   >
                     {/* ✅ z-index context to keep SelectContent above the image card */}
-                    <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                       <div className="space-y-4">
                         <div className="flex items-center justify-between gap-3">
                           <div>
@@ -552,15 +578,28 @@ export function BookingFlow({
                             value={roomId}
                             onValueChange={(v) => form.setValue('roomId', v, { shouldValidate: true })}
                           >
-                            <SelectTrigger className="mt-2 bg-white/5 border-white/10 text-white">
+                            <SelectTrigger className="mt-2 bg-white/5 border-white/10 text-white w-full">
                               <SelectValue placeholder="Select room" />
                             </SelectTrigger>
-                            <SelectContent className="z-[50]">
-                              {rooms.map((r) => (
-                                <SelectItem key={r.id} value={r.id}>
-                                  {r.name} — {formatETB(r.pricePerNight)}/night
-                                </SelectItem>
-                              ))}
+                            <SelectContent className="z-[100000]">
+                              {rooms.map((r) => {
+                                const depositAmt = hotelSettings.requireDeposit
+                                  ? Math.round((r.pricePerNight * hotelSettings.depositPercentage) / 100)
+                                  : 0;
+                                return (
+                                  <SelectItem key={r.id} value={r.id}>
+                                    <div className="flex items-center justify-between w-full">
+                                      <span className="truncate">{r.name}</span>
+                                      <span className="text-xs text-[#B8C0D0] ml-3">
+                                        {formatETB(r.pricePerNight)}/night
+                                        {hotelSettings.requireDeposit && (
+                                          <span className="ml-2">• Deposit {formatETB(depositAmt)}</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })}
                             </SelectContent>
                           </Select>
                         </div>
@@ -627,7 +666,7 @@ export function BookingFlow({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                   >
-                    <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                       <Card className="glass-card rounded-2xl border border-white/10 bg-white/5">
                         <CardContent className="p-4 sm:p-6 space-y-4">
                           <div className="flex items-center justify-between gap-3">
@@ -691,7 +730,10 @@ export function BookingFlow({
                         <CardContent className="p-4 sm:p-6">
                           <div className="flex items-start justify-between gap-3">
                             <div>
-                              <p className="text-white font-semibold">Price estimate</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-white font-semibold">Price estimate</p>
+                                <Badge className="bg-[#D4A14C] text-[#0B0F1A] text-xs">Estimated</Badge>
+                              </div>
                               <p className="text-xs text-[#B8C0D0] mt-1">Based on selected room + nights</p>
                             </div>
                             <Badge className="bg-white/5 text-[#B8C0D0] border-white/10">Step 2/4</Badge>
@@ -732,7 +774,7 @@ export function BookingFlow({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                   >
-                    <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                       <Card className="glass-card rounded-2xl border border-white/10 bg-white/5">
                         <CardContent className="p-4 sm:p-6 space-y-4">
                           <div className="flex items-center justify-between gap-3">
@@ -822,7 +864,7 @@ export function BookingFlow({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                   >
-                    <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                       <Card className="glass-card rounded-2xl border border-white/10 bg-white/5">
                         <CardContent className="p-4 sm:p-6">
                           <div className="flex items-start justify-between gap-3">
@@ -872,18 +914,54 @@ export function BookingFlow({
                                 })
                               }
                             >
-                              <SelectTrigger className="mt-2 bg-white/5 border-white/10 text-white">
+                              <SelectTrigger className="mt-2 bg-white/5 border-white/10 text-white w-full pointer-events-auto">
                                 <SelectValue placeholder="Select payment method" />
                               </SelectTrigger>
 
-                              <SelectContent className="z-[9999]">
+                              <SelectContent className="z-[100001]">
                                 {paymentMethods
                                   .filter((p) => p.isAvailable)
-                                  .map((p) => (
-                                    <SelectItem key={p.method} value={p.method}>
-                                      {p.name}
-                                    </SelectItem>
-                                  ))}
+                                  .map((p) => {
+                                    const logoSrc = p.logo ?? `/${p.method}.png`;
+                                    return (
+                                      <SelectItem key={p.method} value={p.method}>
+                                        <div className="flex items-center gap-3">
+                                          <img
+                                            src={logoSrc}
+                                            alt={`${p.name} logo`}
+                                            className="w-6 h-6 object-contain rounded-sm"
+                                            data-attempt={"0"}
+                                            onError={(e) => {
+                                              const img = e.currentTarget as HTMLImageElement;
+                                              const method = p.method;
+                                              const raw = p.logo ?? '';
+                                              const candidates = [
+                                                raw,
+                                                `/${method}.png`,
+                                                `/${method.toLowerCase()}.png`,
+                                                `/${method.replace(/-/g, '')}.png`,
+                                                `/${method.toLowerCase().replace(/-/g, '')}.png`,
+                                                `/E-${method}.png`,
+                                                `/e-${method}.png`,
+                                                `/E-${method.toLowerCase()}.png`,
+                                                '/bank-logo.png',
+                                              ].filter(Boolean);
+
+                                              let attempt = Number(img.dataset.attempt || '0');
+                                              attempt += 1;
+                                              if (attempt < candidates.length) {
+                                                img.dataset.attempt = String(attempt);
+                                                img.src = candidates[attempt];
+                                              } else {
+                                                img.onerror = null;
+                                              }
+                                            }}
+                                          />
+                                          <span>{p.name}</span>
+                                        </div>
+                                      </SelectItem>
+                                    );
+                                  })}
                               </SelectContent>
                             </Select>
 
@@ -1035,7 +1113,7 @@ export function BookingFlow({
             </div>
 
             {/* Footer */}
-            <div className="border-t border-white/10 px-3 sm:px-6 py-3 sm:py-4 bg-[#0B0F1A]/80 backdrop-blur-md">
+            <div className="sticky bottom-0 z-[100000] pointer-events-auto border-t border-white/10 px-3 sm:px-6 py-3 sm:py-4 bg-[#0B0F1A]/80 backdrop-blur-md">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <p className="text-[11px] sm:text-xs text-[#B8C0D0] max-w-full sm:max-w-md">
                   {hotelSettings.cancellationPolicy}
@@ -1072,7 +1150,7 @@ export function BookingFlow({
 
       {/* Pay Now Modal */}
       <Dialog open={payOpen} onOpenChange={setPayOpen}>
-        <DialogContent className="bg-[#0B0F1A] border-white/10 text-white w-[96vw] sm:w-[92vw] max-w-xl p-0 overflow-hidden">
+        <DialogContent showCloseButton={false} className="bg-[#0B0F1A] border-white/10 text-white w-[95vw] sm:w-[92vw] max-w-xl mx-auto p-0 overflow-hidden z-[99999]">
           {/* ✅ Remove extra X: this modal has only one close too */}
           <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-white/10">
             <div className="flex items-start justify-between gap-3">
