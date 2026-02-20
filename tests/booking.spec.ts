@@ -5,8 +5,11 @@ test('BookingFlow end-to-end', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 
   // Open booking dialog
-  await page.click('[data-test-id="book-now-button"]');
-  await page.waitForSelector('[data-slot="dialog-content"]');
+  const bookNowBtn = page.locator('[data-test-id="book-now-button"]').filter({ visible: true }).first();
+  await bookNowBtn.scrollIntoViewIfNeeded();
+  await bookNowBtn.click();
+  
+  await page.waitForSelector('[data-slot="dialog-content"]', { state: 'visible' });
 
   const dialog = page.locator('[data-slot="dialog-content"]');
 
