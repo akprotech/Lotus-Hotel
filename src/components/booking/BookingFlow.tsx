@@ -478,8 +478,10 @@ export function BookingFlow({
           showCloseButton={false}
           className={cx(
               'p-0 overflow-hidden text-white border-white/10',
-              'w-[95vw] sm:w-[92vw] max-w-5xl mx-auto',
-              'max-h-[92vh] bg-[#0B0F1A] z-[99999]'
+              'w-full sm:w-[92vw] max-w-5xl mx-auto',
+              'max-h-[100vh] sm:max-h-[90vh] bg-[#0B0F1A] z-[99999]',
+              'top-0 sm:top-[50%] sm:translate-y-[-50%]',
+              'rounded-none sm:rounded-xl'
             )}
         >
           {/* subtle background polish */}
@@ -1113,7 +1115,7 @@ export function BookingFlow({
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 z-[100000] pointer-events-auto border-t border-white/10 px-3 sm:px-6 py-3 sm:py-4 bg-[#0B0F1A]/80 backdrop-blur-md">
+            <div data-slot="dialog-footer" className="sticky bottom-0 z-[100000] pointer-events-auto border-t border-white/10 px-3 sm:px-6 py-3 sm:py-4 bg-[#0B0F1A]/80 backdrop-blur-md">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <p className="text-[11px] sm:text-xs text-[#B8C0D0] max-w-full sm:max-w-md">
                   {hotelSettings.cancellationPolicy}

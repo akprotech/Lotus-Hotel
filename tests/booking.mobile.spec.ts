@@ -7,7 +7,10 @@ test('BookingFlow is responsive on small viewport (mobile)', async ({ page }) =>
   await page.waitForLoadState('networkidle');
 
   // Open booking dialog
-  await page.click('[data-test-id="book-now-button"]');
+  const bookNowBtn = page.locator('[data-test-id="book-now-button"]').filter({ visible: true }).first();
+  await bookNowBtn.scrollIntoViewIfNeeded();
+  await bookNowBtn.click();
+
   const dialog = page.locator('[data-slot="dialog-content"]');
   await expect(dialog).toBeVisible();
 
