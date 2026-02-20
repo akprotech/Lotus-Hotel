@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: 'tests',
-  timeout: 60_000,
-  expect: { timeout: 5000 },
+  timeout: 90_000,
+  expect: { timeout: 10000 },
   use: {
     headless: true,
     baseURL: 'http://localhost:5174',

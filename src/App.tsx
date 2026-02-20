@@ -101,7 +101,7 @@ function NavBar({ onBookClick, currentPage, onNavigate, savedCount }: { onBookCl
 
             <div className="hidden lg:flex items-center gap-3">
               <a href={`https://wa.me/${hotelInfo.whatsapp}`} className="text-sm text-[#B8C0D0] hover:text-[#D4A14C] transition-colors">Call Now</a>
-              <Button onClick={onBookClick} className="bg-[#D4A14C] hover:bg-[#E8C87A] text-[#0B0F1A] font-semibold rounded-xl">Book Now</Button>
+              <Button onClick={onBookClick} data-test-id="book-now-button" className="bg-[#D4A14C] hover:bg-[#E8C87A] text-[#0B0F1A] font-semibold rounded-xl">Book Now</Button>
             </div>
 
             <button className="lg:hidden text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -156,7 +156,7 @@ function HeroSection({ onBookClick }: { onBookClick: () => void }) {
               </p>
 
               <div className="flex flex-wrap gap-4 mb-8">
-                <Button onClick={onBookClick} className="bg-[#D4A14C] hover:bg-[#E8C87A] text-[#0B0F1A] font-semibold rounded-xl">
+                <Button onClick={onBookClick} data-test-id="book-now-button" className="bg-[#D4A14C] hover:bg-[#E8C87A] text-[#0B0F1A] font-semibold rounded-xl">
                   Book Now
                 </Button>
               </div>
