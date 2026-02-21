@@ -2,6 +2,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "installCommand": "npm install",
-  "projectName": "lotus-hotel"
+  "installCommand": "npm install"
 }
